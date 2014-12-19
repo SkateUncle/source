@@ -1,5 +1,6 @@
 package com.example.skate_uncle.skateuncle;
 
+import android.app.Activity;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -14,17 +15,23 @@ import android.view.Surface;
 import android.util.Log;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
+import android.view.Window;
 
-public class MainActivity extends ActionBarActivity implements SensorEventListener {
+public class MainActivity extends Activity implements SensorEventListener {
 
     private SensorManager sensorManager_;
     private Sensor sensor_;
     private boolean use_gyro = true;
     private float[] angles = new float[3];
+    public static SoundManager soundManager_;
+
+    public float[][] samples = new float[100][3];
+    public int samples_count = 0;
+    public float[] samples_average = new float[3];
 
     // Create a constant to convert nanoseconds to seconds.
     private static final float NS2S = 1.0f / 1000000000.0f;
-    private float timestamp;
+    private long timestamp;
 
     private PowerManager powerManager_;
     private WakeLock wakeLock_;
@@ -78,6 +85,9 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         wakeLock_ = powerManager_.newWakeLock(PowerManager.FULL_WAKE_LOCK, "FlappyBot");
         tap_listener_ = new TapListener();
         gesture_detector_ = new GestureDetectorCompat(this, tap_listener_);
+
+        // Init sound manager
+        soundManager_ = new SoundManager(this);
     }
 
     @Override
@@ -92,6 +102,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         ResetAngles();
         sensorManager_.registerListener(this, sensor_, sensorManager_.SENSOR_DELAY_GAME);
         wakeLock_.acquire();
+        soundManager_.onResume();
     }
 
     @Override
@@ -99,6 +110,7 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         super.onPause();
         sensorManager_.unregisterListener(this);
         wakeLock_.release();
+        soundManager_.onPause();
     }
 
     @Override
@@ -127,10 +139,9 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         }
 
         if (use_gyro) {
-            x_acceleration = new_value / ((float) Math.PI / 2);
-//      Log.d("Gyro", "X acceleration: " + x_acceleration + " Rotation: " + rotation);
+            x_acceleration = (float)(new_value / (Math.PI / 2));
         } else
-            x_acceleration = -new_value / 9.8f;
+            x_acceleration = (float)(-new_value / 9.8);
     }
 
     @Override
@@ -143,14 +154,41 @@ public class MainActivity extends ActionBarActivity implements SensorEventListen
         angles[2] = sensorEvent.values[2];
     }
 
-    private void onGyroSensorChanged(SensorEvent sensorEvent) {
+    private void onGyroSensorChanged(SensorEvent event) {
         if (timestamp != 0) {
-            final float dT = (sensorEvent.timestamp - timestamp) * NS2S;
-            angles[0] += sensorEvent.values[1] * dT;
-            angles[1] += -sensorEvent.values[0] * dT;
-            angles[2] += sensorEvent.values[2] * dT;
+            float axisX = event.values[0];
+            float axisY = event.values[1];
+            float axisZ = event.values[2];
+//            Log.d("GyroOrigin", axisX + " " + axisY + " " + axisZ);
+            if (samples_count < samples.length) {
+                samples[samples_count][0] = axisX;
+                samples[samples_count][1] = axisY;
+                samples[samples_count][2] = axisZ;
+                ++samples_count;
+            } else if (samples_count == samples.length) {
+                for (int j = 0; j < 3; ++j) {
+                    samples_average[j] = 0;
+                    for (int i = 0; i < samples.length; ++i) {
+                        samples_average[j] += samples[i][j];
+                    }
+                    samples_average[j] /= samples.length;
+                }
+                Log.d("GyroCorrection", samples_average[0] + " " + samples_average[1] + " " + samples_average[2]);
+                ++samples_count;
+            } else {
+//                Log.d("GyroCorrected", axisX + " " + axisY + " " + axisZ);
+                axisX -= samples_average[0];
+                axisY -= samples_average[1];
+                axisZ -= samples_average[2];
+                final float dT = (event.timestamp - timestamp) * NS2S;
+                angles[0] += axisY * dT;
+                angles[1] += -axisX * dT;
+                angles[2] += axisZ * dT;
+            }
+
+
         }
-        timestamp = sensorEvent.timestamp;
+        timestamp = event.timestamp;
     }
 
     public void ResetAngles() {

@@ -15,6 +15,7 @@ public class SoundManager {
   Map<Integer, Integer> ids = new HashMap<Integer, Integer>();
   Context context_;
   MediaPlayer background_player_;
+  boolean is_pausing = false;
 
   public SoundManager(Context context) {
     context_ = context;
@@ -51,5 +52,17 @@ public class SoundManager {
 
   public void onDie() {
     soundPool_.play(ids.get(4), 1, 1, 1, 0, 0);
+  }
+
+  public void onPause() {
+      if (background_player_.isPlaying()) {
+          background_player_.pause();
+          is_pausing = true;
+      }
+  }
+
+  public void onResume() {
+      if (is_pausing)
+          background_player_.start();
   }
 }

@@ -27,8 +27,6 @@ public class SkateUncleView extends View {
 
     static final boolean kDebug = false;
 
-    private SoundManager soundManager_;
-
     class Spirit {
 
         public Spirit(int screen_width, int screen_height) {
@@ -85,7 +83,7 @@ public class SkateUncleView extends View {
 
             float new_x_speed_ = (MainActivity.x_acceleration * (screen_width_ / BASE_MOVE_DIVIDER));
             if (new_x_speed_ * x_speed_ < 0) {
-                soundManager_.onDirectionChange();
+                MainActivity.soundManager_.onDirectionChange();
             }
             x_speed_ = new_x_speed_;
 
@@ -302,7 +300,6 @@ public class SkateUncleView extends View {
     }
 
     private void initDrawables() {
-        soundManager_ = new SoundManager(getContext());
         lastTime_ = SystemClock.uptimeMillis();
         final int height = getHeight();
         final int width = getWidth();
@@ -365,7 +362,7 @@ public class SkateUncleView extends View {
                 }
                 if (MainActivity.ReceiveTapEvent()) {
                     ((MainActivity) getContext()).ResetAngles();
-                    soundManager_.onStart();
+                    MainActivity.soundManager_.onStart();
                     ChangeState(State.PLAYING);
                 }
                 break;
@@ -373,14 +370,14 @@ public class SkateUncleView extends View {
             case PLAYING:
                 if (scene_.HasCollision(spirit_.GetCollisionRect())) {
                     ChangeState(State.DYING);
-                    soundManager_.onCollision();
+                    MainActivity.soundManager_.onCollision();
                 }
                 int wallOffset = (int) ((curTime - lastTime_) * WALL_SPEED);
                 scene_.Move(wallOffset);
                 break;
             case DYING: {
                 if (curTime - start_time_in_current_state_ > 1000 && !dying_sound_played) {
-                    soundManager_.onDie();
+                    MainActivity.soundManager_.onDie();
                     dying_sound_played = true;
                 } else if (curTime - start_time_in_current_state_ > 4000) {
                     ChangeState(State.OVER);
@@ -409,7 +406,7 @@ public class SkateUncleView extends View {
                         scene_.Reset();
                         spirit_.Reset();
                         ((MainActivity) getContext()).ResetAngles();
-                        soundManager_.onStart();
+                        MainActivity.soundManager_.onStart();
                         ChangeState(State.PLAYING);
                     }
                 }
