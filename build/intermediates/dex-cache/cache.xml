@@ -23,11 +23,32 @@
         <dex dex="/Users/haofang/Programs/SkateUncle/app/build/intermediates/pre-dexed/debug/support-annotations-21.0.3-8f05a8cbfd3c51d95bff0176997800b64877f473.jar" />
     </item>
     <item
+        jar="/Users/haofang/git/source/app/build/intermediates/exploded-aar/com.android.support/appcompat-v7/21.0.3/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="81d42bf983a8741f4888a6e333e454e4a5e0eeb7">
+        <dex dex="/Users/haofang/git/source/app/build/intermediates/pre-dexed/debug/classes-bcc0696056b7ea5394d4832e974a437eee18c577.jar" />
+    </item>
+    <item
         jar="/Users/haofang/Programs/SkateUncle/app/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.3/classes.jar"
         jumboMode="false"
         revision="21.1.2"
         sha1="2c91c949a45a21cdecf26e03951e46c7beec9ad8">
         <dex dex="/Users/haofang/Programs/SkateUncle/app/build/intermediates/pre-dexed/debug/classes-96402441c0d0f10beb17a5e154d9fe77211ed832.jar" />
+    </item>
+    <item
+        jar="/Users/haofang/git/source/app/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.3/libs/internal_impl-21.0.3.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="01ec05bfbafcc07646ba813000bf2ef11742dd03">
+        <dex dex="/Users/haofang/git/source/app/build/intermediates/pre-dexed/debug/internal_impl-21.0.3-f0f880962a5a59d1934e96b7f66f30541ee02199.jar" />
+    </item>
+    <item
+        jar="/Users/haofang/git/source/app/build/intermediates/exploded-aar/com.android.support/support-v4/21.0.3/classes.jar"
+        jumboMode="false"
+        revision="21.1.2"
+        sha1="2c91c949a45a21cdecf26e03951e46c7beec9ad8">
+        <dex dex="/Users/haofang/git/source/app/build/intermediates/pre-dexed/debug/classes-617ea662ac8c37e344a2b79337e8e9d3f9e5d07b.jar" />
     </item>
 
 </items>

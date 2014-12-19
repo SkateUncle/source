@@ -89,7 +89,9 @@ public class SkateUncleView extends View {
             }
             x_speed_ = new_x_speed_;
 
-            float x_delta = x_speed_ * (cur_time - last_time);
+            // set min time to avoid sudden delay in the game.
+            long delta_time = Math.min(200, cur_time - last_time);
+            float x_delta = x_speed_ * delta_time;
             if (x_ + x_delta < width_x_) {
                 x_ = width_x_;
             } else if (x_ + x_delta + width_x_ >= screen_width_) {
@@ -107,9 +109,9 @@ public class SkateUncleView extends View {
             } else {
                 cx -= r.width() / 10;
             }
-            int cy = r.centerY();
+            int cy = r.centerY() - r.height() / 10;
             int dx = (int) (r.width() / 2 * 0.65);
-            int dy = (int) (r.height() / 2 * 0.95);
+            int dy = (int) (r.height() / 2 * 0.8);
             return new Rect(cx - dx, cy - dy, cx + dx, cy + dy);
         }
 
@@ -402,8 +404,8 @@ public class SkateUncleView extends View {
                 int share_center_y = (int) (getHeight() * 0.9);
                 DrawImage(canvas, share_center_x, share_center_y, 0.4, R.drawable.share);
                 if (MainActivity.ReceiveTapEvent()) {
-                    if (Math.abs(MainActivity.last_tap_x_ - share_center_x) < 70 &&
-                            Math.abs(MainActivity.last_tap_y_ - share_center_y) < 70) {
+                    if (Math.abs(MainActivity.last_tap_x_ - share_center_x) < 245 * 0.5 &&
+                            Math.abs(MainActivity.last_tap_y_ - share_center_y) < 85 * 0.5) {
                         share();
                     } else {
                         scene_.Reset();
