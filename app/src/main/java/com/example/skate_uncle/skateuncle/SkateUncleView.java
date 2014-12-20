@@ -21,6 +21,10 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.Toast;
 
+import com.umeng.analytics.MobclickAgent;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class SkateUncleView extends View {
@@ -361,6 +365,7 @@ public class SkateUncleView extends View {
                             R.drawable.tap_to_start);
                 }
                 if (MainActivity.ReceiveTapEvent()) {
+                    MobclickAgent.onEvent(getContext(), "GameNew");
                     ((MainActivity) getContext()).ResetAngles();
                     MainActivity.soundManager_.onStart();
                     ChangeState(State.PLAYING);
@@ -382,6 +387,11 @@ public class SkateUncleView extends View {
                 } else if (curTime - start_time_in_current_state_ > 4000) {
                     ChangeState(State.OVER);
                     dying_sound_played = false;
+                    Map<String, String> map_value = new HashMap<String, String>();
+                    map_value.put("score", String.valueOf(scene_.Score()));
+                    map_value.put("highest", String.valueOf(Math.max(scene_.Score(),
+                            scorer_.highest_score())));
+                    MobclickAgent.onEventValue(getContext(), "GameEnd", map_value, scene_.Score());
                 }
                 break;
             }
@@ -436,6 +446,7 @@ public class SkateUncleView extends View {
     }
 
     private void share() {
+        MobclickAgent.onEvent(getContext(), "Share");
         Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bitmap);
         draw(c);

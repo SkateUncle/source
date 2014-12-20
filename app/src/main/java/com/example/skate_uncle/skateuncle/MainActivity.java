@@ -17,6 +17,8 @@ import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
 import android.view.Window;
 
+import com.umeng.analytics.MobclickAgent;
+
 public class MainActivity extends Activity implements SensorEventListener {
 
     private SensorManager sensorManager_;
@@ -88,6 +90,9 @@ public class MainActivity extends Activity implements SensorEventListener {
 
         // Init sound manager
         soundManager_ = new SoundManager(this);
+
+        // Init umeng
+        MobclickAgent.updateOnlineConfig(this);
     }
 
     @Override
@@ -99,6 +104,7 @@ public class MainActivity extends Activity implements SensorEventListener {
     @Override
     protected void onResume() {
         super.onResume();
+        MobclickAgent.onResume(this);
         ResetAngles();
         sensorManager_.registerListener(this, sensor_, sensorManager_.SENSOR_DELAY_GAME);
         wakeLock_.acquire();
@@ -111,6 +117,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         sensorManager_.unregisterListener(this);
         wakeLock_.release();
         soundManager_.onPause();
+        MobclickAgent.onPause(this);
     }
 
     @Override
@@ -177,9 +184,9 @@ public class MainActivity extends Activity implements SensorEventListener {
                 ++samples_count;
             } else {
 //                Log.d("GyroCorrected", axisX + " " + axisY + " " + axisZ);
-                axisX -= samples_average[0];
-                axisY -= samples_average[1];
-                axisZ -= samples_average[2];
+//                axisX -= samples_average[0];
+//                axisY -= samples_average[1];
+//                axisZ -= samples_average[2];
                 final float dT = (event.timestamp - timestamp) * NS2S;
                 angles[0] += axisY * dT;
                 angles[1] += -axisX * dT;
