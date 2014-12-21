@@ -10,26 +10,33 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.support.v4.view.GestureDetectorCompat;
-import android.support.v7.app.ActionBarActivity;
 import android.view.Surface;
 import android.util.Log;
 import android.view.GestureDetector.SimpleOnGestureListener;
 import android.view.MotionEvent;
-import android.view.Window;
 
 import com.umeng.analytics.MobclickAgent;
+
+import java.util.Arrays;
 
 public class MainActivity extends Activity implements SensorEventListener {
 
     private SensorManager sensorManager_;
-    private Sensor sensor_;
-    private boolean use_gyro = true;
+    private Sensor gyro_sensor_;
+    private Sensor acceleration_sensor_;
+    private Sensor orientation_sensor_;
+    private int sensor_type_;
     private float[] angles = new float[3];
     public static SoundManager soundManager_;
 
-    public float[][] samples = new float[100][3];
-    public int samples_count = 0;
-    public float[] samples_average = new float[3];
+    public float[][] gyro_samples_ = new float[3][5];
+    public int gyro_samples_count_ = 0;
+    public float[] gyro_samples_average_ = new float[3];
+
+    public float[][] orientation_samples_ = new float[3][5];
+    public int orientation_samples_count_ = 0;
+    public float[] orientation_samples_average_ = new float[3];
+    int rotation = 0;
 
     // Create a constant to convert nanoseconds to seconds.
     private static final float NS2S = 1.0f / 1000000000.0f;
@@ -73,15 +80,21 @@ public class MainActivity extends Activity implements SensorEventListener {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        rotation = getWindowManager().getDefaultDisplay().getRotation();
         // Init sensors.
         sensorManager_ = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        sensor_ = sensorManager_.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        if (sensor_ == null) {
-            use_gyro = false;
-            sensor_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+//        gyro_sensor_ = sensorManager_.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        orientation_sensor_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ORIENTATION);
+        if (gyro_sensor_ != null && orientation_sensor_ != null) {
+            sensor_type_ = Sensor.TYPE_GYROSCOPE;
+        } else if (orientation_sensor_ != null) {
+            sensor_type_ = Sensor.TYPE_ORIENTATION;
+        } else {
+            gyro_sensor_ = null;
+            orientation_sensor_ = null;
+            acceleration_sensor_ = sensorManager_.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            sensor_type_ = Sensor.TYPE_ACCELEROMETER;
         }
-
         // Keep screen wake.
         powerManager_ = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock_ = powerManager_.newWakeLock(PowerManager.FULL_WAKE_LOCK, "FlappyBot");
@@ -106,7 +119,12 @@ public class MainActivity extends Activity implements SensorEventListener {
         super.onResume();
         MobclickAgent.onResume(this);
         ResetAngles();
-        sensorManager_.registerListener(this, sensor_, sensorManager_.SENSOR_DELAY_GAME);
+        if (gyro_sensor_ != null)
+            sensorManager_.registerListener(this, gyro_sensor_, sensorManager_.SENSOR_DELAY_GAME);
+        if (orientation_sensor_ != null)
+            sensorManager_.registerListener(this, orientation_sensor_, sensorManager_.SENSOR_DELAY_GAME);
+        if (acceleration_sensor_ != null)
+            sensorManager_.registerListener(this, acceleration_sensor_, sensorManager_.SENSOR_DELAY_GAME);
         wakeLock_.acquire();
         soundManager_.onResume();
     }
@@ -122,11 +140,12 @@ public class MainActivity extends Activity implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        int rotation = getWindowManager().getDefaultDisplay().getRotation();
-        if (use_gyro)
+        if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE)
             onGyroSensorChanged(sensorEvent);
-        else {
+        else if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             onAccelerationSensorChanged(sensorEvent);
+        } else {
+            onOrientationSensorChanged(sensorEvent);
         }
 
         float new_value = 0;
@@ -145,10 +164,12 @@ public class MainActivity extends Activity implements SensorEventListener {
                 break;
         }
 
-        if (use_gyro) {
+        if (sensor_type_ == Sensor.TYPE_GYROSCOPE)
             x_acceleration = (float)(new_value / (Math.PI / 2));
-        } else
+        else if (sensor_type_ == Sensor.TYPE_ACCELEROMETER)
             x_acceleration = (float)(-new_value / 9.8);
+        else
+            x_acceleration = -new_value / 90;
     }
 
     @Override
@@ -161,44 +182,80 @@ public class MainActivity extends Activity implements SensorEventListener {
         angles[2] = sensorEvent.values[2];
     }
 
+    private void onOrientationSensorChanged(SensorEvent event) {
+        float axisX = event.values[2];
+        float axisY = event.values[1];
+        float axisZ = event.values[0];
+//        Log.d("Orientation", axisX + " " + axisY + " " + axisZ);
+        if (sensor_type_ == Sensor.TYPE_ORIENTATION &&
+            orientation_samples_count_ > orientation_samples_[0].length) {
+            angles[0] = axisX - orientation_samples_average_[0];
+            angles[1] = axisY - orientation_samples_average_[1];
+            angles[2] = axisZ - orientation_samples_average_[2];
+        } else {
+            if (orientation_samples_count_ < orientation_samples_[0].length) {
+                orientation_samples_[0][orientation_samples_count_] = axisX;
+                orientation_samples_[1][orientation_samples_count_] = axisY;
+                orientation_samples_[2][orientation_samples_count_] = axisZ;
+                ++orientation_samples_count_;
+            } else if (orientation_samples_count_ == orientation_samples_[0].length) {
+                for (int i = 0; i < 3; ++i) {
+                    orientation_samples_average_[i] = 0;
+                    Arrays.sort(orientation_samples_[i]);
+                    orientation_samples_average_[i] = orientation_samples_[i][orientation_samples_[i].length / 2];
+                }
+                Log.d("OrientationCorrection", orientation_samples_average_[0] + " " +
+                      orientation_samples_average_[1] + " " + orientation_samples_average_[2]);
+                ++orientation_samples_count_;
+            } else if (((rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) &&
+                        Math.abs(orientation_samples_average_[0] - axisX) < 0.5) ||
+                       ((rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) &&
+                        Math.abs(orientation_samples_average_[1] - axisY) < 0.5)
+                      ) {
+                Arrays.fill(angles, 0);
+                Log.d("OrientationCorrection", "Reset angles");
+            }
+        }
+    }
+
     private void onGyroSensorChanged(SensorEvent event) {
         if (timestamp != 0) {
             float axisX = event.values[0];
             float axisY = event.values[1];
             float axisZ = event.values[2];
 //            Log.d("GyroOrigin", axisX + " " + axisY + " " + axisZ);
-            if (samples_count < samples.length) {
-                samples[samples_count][0] = axisX;
-                samples[samples_count][1] = axisY;
-                samples[samples_count][2] = axisZ;
-                ++samples_count;
-            } else if (samples_count == samples.length) {
-                for (int j = 0; j < 3; ++j) {
-                    samples_average[j] = 0;
-                    for (int i = 0; i < samples.length; ++i) {
-                        samples_average[j] += samples[i][j];
-                    }
-                    samples_average[j] /= samples.length;
+            if (gyro_samples_count_ < gyro_samples_[0].length) {
+                gyro_samples_[0][gyro_samples_count_] = axisX;
+                gyro_samples_[1][gyro_samples_count_] = axisY;
+                gyro_samples_[2][gyro_samples_count_] = axisZ;
+                ++gyro_samples_count_;
+            } else if (gyro_samples_count_ == gyro_samples_[0].length) {
+                for (int i = 0; i < 3; ++i) {
+                    gyro_samples_average_[i] = 0;
+                    Arrays.sort(gyro_samples_[i]);
+                    gyro_samples_average_[i] = gyro_samples_[i][gyro_samples_[i].length / 2];
                 }
-                Log.d("GyroCorrection", samples_average[0] + " " + samples_average[1] + " " + samples_average[2]);
-                ++samples_count;
+                Log.d("GyroCorrection", gyro_samples_average_[0] + " " + gyro_samples_average_[1] + " " + gyro_samples_average_[2]);
+                ++gyro_samples_count_;
             } else {
 //                Log.d("GyroCorrected", axisX + " " + axisY + " " + axisZ);
-//                axisX -= samples_average[0];
-//                axisY -= samples_average[1];
-//                axisZ -= samples_average[2];
+//                axisX -= gyro_samples_average_[0];
+//                axisY -= gyro_samples_average_[1];
+//                axisZ -= gyro_samples_average_[2];
                 final float dT = (event.timestamp - timestamp) * NS2S;
                 angles[0] += axisY * dT;
                 angles[1] += -axisX * dT;
                 angles[2] += axisZ * dT;
             }
-
-
         }
         timestamp = event.timestamp;
     }
 
     public void ResetAngles() {
-        angles = new float[3];
+        Arrays.fill(angles, 0);
+        Arrays.fill(gyro_samples_average_, 0);
+        Arrays.fill(orientation_samples_average_, 0);
+        gyro_samples_count_ = 0;
+        orientation_samples_count_ = 0;
     }
 }

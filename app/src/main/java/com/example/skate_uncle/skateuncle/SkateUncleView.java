@@ -199,21 +199,21 @@ public class SkateUncleView extends View {
         }
 
         public boolean HasCollision(Rect r) {
-            for (int i = 0; i < kScreenY; i++) {
-                if (GetRect(0, i).intersect(r)) {
-                    return true;
-                }
-                if (GetRect(kScreenX - 1, i).intersect(r)) {
-                    return true;
-                }
-            }
-            for (int i = 0; i < rocks_.length; i++) {
-                for (int j = 0; j < rocks_[i].length; j++) {
-                    if (rocks_[i][j] == 1 && GetRect(j + 1, i).intersect(r)) {
-                        return true;
-                    }
-                }
-            }
+//            for (int i = 0; i < kScreenY; i++) {
+//                if (GetRect(0, i).intersect(r)) {
+//                    return true;
+//                }
+//                if (GetRect(kScreenX - 1, i).intersect(r)) {
+//                    return true;
+//                }
+//            }
+//            for (int i = 0; i < rocks_.length; i++) {
+//                for (int j = 0; j < rocks_[i].length; j++) {
+//                    if (rocks_[i][j] == 1 && GetRect(j + 1, i).intersect(r)) {
+//                        return true;
+//                    }
+//                }
+//            }
             return false;
         }
 
