@@ -199,21 +199,21 @@ public class SkateUncleView extends View {
         }
 
         public boolean HasCollision(Rect r) {
-//            for (int i = 0; i < kScreenY; i++) {
-//                if (GetRect(0, i).intersect(r)) {
-//                    return true;
-//                }
-//                if (GetRect(kScreenX - 1, i).intersect(r)) {
-//                    return true;
-//                }
-//            }
-//            for (int i = 0; i < rocks_.length; i++) {
-//                for (int j = 0; j < rocks_[i].length; j++) {
-//                    if (rocks_[i][j] == 1 && GetRect(j + 1, i).intersect(r)) {
-//                        return true;
-//                    }
-//                }
-//            }
+            for (int i = 0; i < kScreenY; i++) {
+                if (GetRect(0, i).intersect(r)) {
+                    return true;
+                }
+                if (GetRect(kScreenX - 1, i).intersect(r)) {
+                    return true;
+                }
+            }
+            for (int i = 0; i < rocks_.length; i++) {
+                for (int j = 0; j < rocks_[i].length; j++) {
+                    if (rocks_[i][j] == 1 && GetRect(j + 1, i).intersect(r)) {
+                        return true;
+                    }
+                }
+            }
             return false;
         }
 
@@ -457,8 +457,8 @@ public class SkateUncleView extends View {
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("image/jpeg");
             share.putExtra(Intent.EXTRA_STREAM, Uri.parse(url));
-            getContext().startActivity(
-                    Intent.createChooser(share, getContext().getString(R.string.share_via)));
+            ((MainActivity)getContext()).startActivityForResult(
+                    Intent.createChooser(share, getContext().getString(R.string.share_via)), 0);
         } else {
             Toast.makeText(getContext(), "Error sharing the score!", Toast.LENGTH_LONG).show();
         }
