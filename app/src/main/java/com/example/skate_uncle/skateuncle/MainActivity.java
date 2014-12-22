@@ -85,6 +85,7 @@ public class MainActivity extends Activity implements SensorEventListener {
         if (gyro_sensor_ != null && orientation_sensor_ != null) {
             sensor_type_ = Sensor.TYPE_GYROSCOPE;
             gyro_service_ = new Rotation(this);
+            orientation_sensor_ = null;
         } else if (orientation_sensor_ != null) {
             sensor_type_ = Sensor.TYPE_ORIENTATION;
         } else {
