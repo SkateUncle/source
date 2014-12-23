@@ -21,13 +21,15 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.Toast;
 
+import com.umeng.analytics.MobclickAgent;
+
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class SkateUncleView extends View {
 
     static final boolean kDebug = false;
-
-    private SoundManager soundManager_;
 
     class Spirit {
 
@@ -85,7 +87,7 @@ public class SkateUncleView extends View {
 
             float new_x_speed_ = (MainActivity.x_acceleration * (screen_width_ / BASE_MOVE_DIVIDER));
             if (new_x_speed_ * x_speed_ < 0) {
-                soundManager_.onDirectionChange();
+                MainActivity.soundManager_.onDirectionChange();
             }
             x_speed_ = new_x_speed_;
 
@@ -304,7 +306,6 @@ public class SkateUncleView extends View {
     }
 
     private void initDrawables() {
-        soundManager_ = new SoundManager(getContext());
         lastTime_ = SystemClock.uptimeMillis();
         final int height = getHeight();
         final int width = getWidth();
@@ -366,8 +367,9 @@ public class SkateUncleView extends View {
                             R.drawable.tap_to_start);
                 }
                 if (MainActivity.ReceiveTapEvent()) {
+                    MobclickAgent.onEvent(getContext(), "GameNew");
                     ((MainActivity) getContext()).ResetAngles();
-                    soundManager_.onStart();
+                    MainActivity.soundManager_.onStart();
                     ChangeState(State.PLAYING);
                 }
                 break;
@@ -375,18 +377,23 @@ public class SkateUncleView extends View {
             case PLAYING:
                 if (scene_.HasCollision(spirit_.GetCollisionRect())) {
                     ChangeState(State.DYING);
-                    soundManager_.onCollision();
+                    MainActivity.soundManager_.onCollision();
                 }
                 int wallOffset = (int) ((curTime - lastTime_) * WALL_SPEED);
                 scene_.Move(wallOffset);
                 break;
             case DYING: {
                 if (curTime - start_time_in_current_state_ > 1000 && !dying_sound_played) {
-                    soundManager_.onDie();
+                    MainActivity.soundManager_.onDie();
                     dying_sound_played = true;
                 } else if (curTime - start_time_in_current_state_ > 4000) {
                     ChangeState(State.OVER);
                     dying_sound_played = false;
+                    Map<String, String> map_value = new HashMap<String, String>();
+                    map_value.put("score", String.valueOf(scene_.Score()));
+                    map_value.put("highest", String.valueOf(Math.max(scene_.Score(),
+                            scorer_.highest_score())));
+                    MobclickAgent.onEventValue(getContext(), "GameEnd", map_value, scene_.Score());
                 }
                 break;
             }
@@ -411,7 +418,7 @@ public class SkateUncleView extends View {
                         scene_.Reset();
                         spirit_.Reset();
                         ((MainActivity) getContext()).ResetAngles();
-                        soundManager_.onStart();
+                        MainActivity.soundManager_.onStart();
                         ChangeState(State.PLAYING);
                     }
                 }
@@ -441,6 +448,7 @@ public class SkateUncleView extends View {
     }
 
     private void share() {
+        MobclickAgent.onEvent(getContext(), "Share");
         Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(bitmap);
         draw(c);
@@ -451,8 +459,8 @@ public class SkateUncleView extends View {
             Intent share = new Intent(Intent.ACTION_SEND);
             share.setType("image/jpeg");
             share.putExtra(Intent.EXTRA_STREAM, Uri.parse(url));
-            getContext().startActivity(
-                    Intent.createChooser(share, getContext().getString(R.string.share_via)));
+            ((MainActivity)getContext()).startActivityForResult(
+                    Intent.createChooser(share, getContext().getString(R.string.share_via)), 0);
         } else {
             Toast.makeText(getContext(), "Error sharing the score!", Toast.LENGTH_LONG).show();
         }
